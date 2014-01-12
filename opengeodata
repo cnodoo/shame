@@ -1,0 +1,25 @@
+geolite
+https://wiki.mozilla.org/Services/Location/Bootstrap
+http://openbmap.org/
+openwlanmap
+
+
+
+
+https://blog.mozilla.org/services/2013/10/28/introducing-the-mozilla-location-service/
+https://wiki.mozilla.org/Services/Location/Bootstrap
+https://github.com/mozilla/ichnaea/issues
+https://wiki.mozilla.org/Services/Location
+
+
+
+#INFO: uncertainty value messured in meters
+#INFO: crs = coordinate reference system ; case-insensitiv ; default=WGS-84 (World Geodetic System 1984) ; other_example=Moon-2011
+
+
+#TODO: geo daten per wlan bssid(=mac), z.b. via google oder http://www.openwlanmap.org/ "libwlocate", http://openwlanmap.org/db.tar.bz2
+#TODO: [WIFI] openwlanmap.org
+#TODO: [WIFI] openbmap.org
+#TODO: [CELL] openbmap.org
+#TODO: [WIFI] wigle.net # the data base itself is accessed and distributed under a freeware proprietary license
+

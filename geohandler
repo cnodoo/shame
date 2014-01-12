@@ -1,0 +1,12 @@
+
+http://wiki.openstreetmap.org/wiki/Gosmore
+http://wiki.openstreetmap.org/wiki/Pyroute
+http://wiki.openstreetmap.org/wiki/PyrouteLib
+http://almien.co.uk/OSM/Routing/
+http://nzjrs.github.io/osm-gps-map/
+http://wiki.navit-project.org/index.php/Screenshots_gallery
+
+
+#!/bin/sh
+
+geo_uri="geo:${geo_latitude},${geo_longitude}${geo_altitude:+,${geo_altitude}}${geo_uncertainity:+;u=${geo_uncertainty}}${geo_crs:+;crs=${geo_crs}}"
