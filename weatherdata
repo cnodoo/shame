@@ -1,0 +1,53 @@
+http://www.schwarzvogel.de/software-pymetar.shtml
+
+
+
+With country code
+http://api.openweathermap.org/data/2.1/find/name?q=London,UK
+units (imperial, metric, internal)
+http://api.openweathermap.org/data/2.1/find/name?q=London,%20UK&units=imperial
+http://api.openweathermap.org/data/2.1/find/name?q=London,%20UK&units=metric
+
+api.openweathermap.org/data/2.1/weather/city/{CITY_ID}?type={json|html}
+
+
+http://api.openweathermap.org/data/2.1/forecast/city/{CITY_ID}
+
+
+
+http://api.openweathermap.org/data/2.2/forecast/city/5128581?mode=daily_compact
+
+
+
+cityid karlsruhe: 2892794 (gefunden ueber
+http://api.openweathermap.org/data/2.1/find/name?q=karlsruhe,de )
+
+
+
+----
+
+
+auch METAR daten nutzen (oder TAF oder GAFOR):
+
+https://de.wikipedia.org/wiki/METAR
+http://www.nws.noaa.gov/tg/siteloc.shtml <--  stationen finder
+http://www.schwarzvogel.de/software-pymetar.shtml <-- pyMETAR
+http://www.deutscher-wetterdienst.de/lexikon/download.php?file=TAF.pdf
+http://www.dwd.de/sid_WQCqKJ0R4HptxPGtTNNwJLg0w1jykhnsMrLp27lRZnwy29vy7Kh8!274244207!902933057!1250522353616/bvbw/appmanager/bvbw/dwdwwwDesktop?_nfpb=true&_pageLabel=dwdwww_result_page&portletMasterPortlet_i1gsbDocumentPath=Navigation%2FForschung%2FAnalyse__Modellierung%2FFU__AM__copy__TAF__node.html__nnn%3Dtrue
+http://www.met.tamu.edu/class/atmo151/metar_decode.htm
+
+
+
+
+
+http://vortex.plymouth.edu/cgi-bin/gen_statlog-u.cgi?ident=EDSB&pl=none0&yy=13&mm=04&dd=08
+
+
+
+
+
+----
+
+
+openweathermap.org
+wunderground.com
