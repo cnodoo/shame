@@ -1,0 +1,376 @@
+#!/bin/sh
+
+# README
+#
+# This is not a feed reader.
+# This is not 'sane' software. It sucks. Hard.
+# This only works with well-formed and valid Atom feeds.
+# This software kills cute kitties at random.
+#
+# Better rewrite it from scratch in xslt, python or your prefered language.
+#
+# You have been warned.
+
+# TODO
+# 
+# This file is scattered with #FIXME, #TODO, #INFO and #DEBUG marks.
+
+#TODO: portability
+#TODO: work as filter
+#TODO: RFC4287: Extension Elements
+#TODO: RFC4287: Undefined Content
+#TODO: RFC4287: Common Attributes 
+
+#DEBUG: set -x 
+#DEBUG: set -e
+
+
+pipe_command="cat"
+entries_seen=".seen_entries"
+sender_address="`basename ${0}`@`hostname -f`"
+version="0.2"
+
+args=`getopt l:p:uhv ${*}`; errcode="${?}"; set -- ${args}
+
+while :
+do
+	case "${1}" in
+		-u) update_feed="true"; shift;;
+		-l) feed_url="${2}"; shift; shift;;
+		-p) pipe_command="${2}"; shift; shift;;
+		-h) show_help="true"; shift;;
+		-v) show_version="true"; shift;;
+		--) shift; break;;
+	esac
+done
+
+
+main()
+{
+	feed_file="${1}"
+	www_pager="lynx"
+	xml_parser="xml"
+
+	command -v curl >/dev/null 2>&1 || { show_help; exit 1; }
+	command -v "${www_pager}" >/dev/null 2>&1 || { www_pager="lynx"; }
+	command -v "${www_pager}" >/dev/null 2>&1 || { www_pager="links2"; }
+	command -v "${www_pager}" >/dev/null 2>&1 || { www_pager="elinks"; }
+	command -v "${www_pager}" >/dev/null 2>&1 || { www_pager="w3m"; }
+	command -v "${www_pager}" >/dev/null 2>&1 || { show_help; exit 1; }
+	command -v "${xml_parser}" >/dev/null 2>&1 || { xml_parser="xmlstarlet"; }
+	command -v "${xml_parser}" >/dev/null 2>&1 || { show_help; exit 1; }
+
+	xml_parser="${xml_parser} sel -N atom=http://www.w3.org/2005/Atom -t"
+
+	case "${www_pager}"
+	in
+		w3m)    www_pager="w3m -dump -cols 70 -O ascii";;
+		links)  www_pager="links -dump -width 70 -codepage ascii";;
+		links2) www_pager="links2 -dump -width 70 -codepage ascii";;
+		lynx)   www_pager="lynx -dump -width 70 -display_charset ascii";;
+		elinks) www_pager="elinks -dump-width 70 -dump-charset ascii -dump 1";;
+		*)      show_help; exit 1;;
+	esac
+
+	test -n "${show_help}" && { show_help; exit 0; }
+	test -n "${show_version}" && { printf "%s\n" "`basename ${0}` version ${version}"; exit 0; }
+	test -z "${feed_file}" && { show_help; exit 1; }
+	test -z "${feed_url}" && feed_url=`${xml_parser} -v '/atom:feed/atom:link[@rel="self"]/@href' "${feed_file}"`
+	test -z "${feed_url}" && unset update_feed
+	test -n "${update_feed}" && curl -s "${feed_url}" > "${feed_file}"
+
+	touch "${entries_seen}"
+	
+	case `${xml_parser} -v 'local-name(/*)' "${feed_file}"`
+	in
+		feed) decode_feed "/atom:feed";;
+		entry) decode_entry "/atom:entry";;
+		*) exit 1;;
+	esac
+}
+
+
+show_help()
+{
+	cat <<EOT
+
+`basename ${0}`, version ${version}:
+                           
+Invocation:                
+  `basename ${0}` [-v] [-h] [-u] [-l feed_url] [-p pipe_command] feed_file
+                           
+  -v                show version
+  -h                show help
+  -u                update feed before execution
+  -l feed_url       use feed_url for update (default: try to extract url from feed_file)
+  -p pipe_command   use pipe_command as writer, e.g. to_maildir.sh (default: cat)
+  feed_file         file containing the feed
+                           
+Dependencies:              
+  curl, xmlstarlet, w3m (untested: links, links2, lynx, elinks)
+                           
+Configuration:             
+  pipe_command      use pipe_command as writer, e.g. to_maildir.sh (default: cat)
+  entries_seen      file containing a list of already known entries (default: \${HOME}/.seen_entries)
+  sender_address    mail address of the sender (default: \`basename \${0}\`@\`hostname -f\`)
+EOT
+}
+
+
+decode_feed() 
+{
+	feed_element="${1}"
+
+	feed_id=`${xml_parser} -v "${feed_element}/atom:id" "${feed_file}"`
+	feed_title=`${xml_parser} -v "${feed_element}/atom:title" "${feed_file}"`
+	feed_subtitle=`${xml_parser} -v "${feed_element}/atom:subtitle" "${feed_file}"`
+	feed_updated=`${xml_parser} -v "${feed_element}/atom:updated" "${feed_file}"`
+	feed_generator=`${xml_parser} -v "${feed_element}/atom:generator" "${feed_file}"`
+	feed_generator_version=`${xml_parser} -v "${feed_element}/atom:generator/@version" "${feed_file}"`
+	feed_generator_uri=`${xml_parser} -v "${feed_element}/atom:generator/@uri" "${feed_file}"`
+	feed_logo=`${xml_parser} -v "${feed_element}/atom:logo" "${feed_file}"`
+	feed_icon=`${xml_parser} -v "${feed_element}/atom:icon" "${feed_file}"`
+	feed_rights=`${xml_parser} -v "${feed_element}/atom:rights" "${feed_file}"`
+	feed_categories=`${xml_parser} -m "${feed_element}/atom:category" -v . -o , "${feed_file}"` 
+	#TODO: categories @label, @scheme, @term
+
+	decode_persons "${feed_element}"
+	decode_links "${feed_element}"
+
+	feed_entry_count=`${xml_parser} -v "count(${feed_element}/atom:entry)" "${feed_file}"`
+	entrycounter=1
+
+	while [ "${entrycounter}" -le "${feed_entry_count}" ]
+	do
+		decode_entry "${feed_element}/atom:entry[${entrycounter}]"
+		entrycounter=`expr "${entrycounter}" + 1`
+	done
+
+	unset feed_element feed_id feed_title feed_subtitle feed_updated feed_generator feed_generator_version feed_generator_uri feed_logo feed_icon feed_rights feed_categories feed_content_url feed_entry_count feed_links  entrycounter
+}
+
+
+decode_person()
+{
+	person_element="${1}"
+
+	person_name=`${xml_parser} -v "${person_element}/atom:name" "${feed_file}"`
+	person_mail=`${xml_parser} -v "${person_element}/atom:mail" "${feed_file}"`
+	person_uri=`${xml_parser} -v "${person_element}/atom:uri" "${feed_file}"`
+
+	decode_link "${person_element}/atom:uri"
+
+	person_formated="${person_name} <${person_mail:-${person_uri:-nil}}>"
+        
+	case "${person_element}"
+	in
+		*/atom:source/atom:author*) source_authors="${person_formated}, ${source_authors}";;
+		*/atom:source/atom:contributor*) source_contributors="${person_formated}, ${source_contributors}";;
+		/atom:feed/atom:author*) feed_authors="${person_formated}, ${feed_authors}";;
+		/atom:feed/atom:contributor*) feed_contributors="${person_formated}, ${feed_contributors}";;
+		//atom:author*) feed_authors="${person_formated}, ${feed_authors}";;
+		//atom:contributor*) feed_contributors="${person_formated}, ${feed_contributors}";;
+		*/atom:author*) entry_authors="${person_formated}, ${entry_authors}";;
+		*/atom:contributor*) entry_contributors="${person_formated}, ${entry_contributors}";;
+	esac
+
+	unset person_element person_name person_mail person_uri person_formated
+}
+
+
+decode_persons()
+{
+	calling_element="${1}"
+        
+	person_count=`${xml_parser} -v "count(${calling_element}/atom:author)" "${feed_file}"`
+	personcounter=1
+
+	while [ "${personcounter}" -le "${person_count}" ]
+	do
+		decode_person "${calling_element}/atom:author[${personcounter}]"
+		personcounter=`expr "${personcounter}" + 1`
+	done
+
+	person_count=`${xml_parser} -v "count(${calling_element}/atom:contributor)" "${feed_file}"`
+	personcounter=1
+
+	while [ "${personcounter}" -le "${person_count}" ]
+	do
+		decode_person "${calling_element}/atom:contributor[${personcounter}]"
+		personcounter=`expr "${personcounter}" + 1`
+	done
+
+	unset calling_element person_count person_counter
+}
+
+
+decode_link()
+{
+	link_element="${1}"
+
+	link_uri=`${xml_parser} -v "${link_element}" "${feed_file}"`
+	link_href=`${xml_parser} -v "${link_element}/@href" "${feed_file}"`
+	link_type=`${xml_parser} -v "${link_element}/@type" "${feed_file}"`
+	link_rel=`${xml_parser} -v "${link_element}/@rel" "${feed_file}"`
+	link_hreflang=`${xml_parser} -v "${link_element}/@hreflang" "${feed_file}"`
+	link_title=`${xml_parser} -v "${link_element}/@title" "${feed_file}"`
+	link_length=`${xml_parser} -v "${link_element}/@length" "${feed_file}"`
+
+	#TODO: OUTPUT FORMATING
+	#FIXME: uppercase/lowercase
+	#FIXME: multiple rel=alternate are possible; select by type/lang
+	case "${link_rel}"
+	in
+		"") link_rel="alternate"; link_content="${link_href}"; link_formated="[${link_rel}] ${link_href} (${link_hreflang})";;
+		alternate) link_content="${link_href}"; link_formated="[${link_rel}] ${link_href} (${link_hreflang})";;
+		self) link_formated="[${link_rel}] ${link_href}";;
+		related) link_formated="[${link_rel}] ${link_href} (${link_hreflang}) (${link_type}) (${link_length})";;
+		enclosure) link_formated="[${link_rel}] ${link_href} (${link_hreflang}) (${link_type}) (${link_length})";;
+		via) link_formated="[${link_rel}] ${link_href} (${link_hreflang})";;
+		*) link_formated="[${link_rel}] ${link_href} (${link_hreflang}) (${link_type}) (${link_length})";;
+	esac
+
+	case "${link_element}"
+	in
+		*/atom:source/atom:link) source_links="${source_links} ${link_formated}"; source_content_url="${link_content}";;
+		/atom:feed/atom:link*) feed_links="${feed_links} ${link_formated}"; feed_content_url="${link_content}";;
+		//atom:link*) feed_links="${feed_links} ${link_formated}"; feed_content_url="${link_content}";;
+		*/atom:entry*) entry_links="${entry_links} ${link_formated}"; entry_content_url="${link_content}";;
+		#TODO: link_uri for person/uri constructs
+	esac
+
+	unset link_href link_type link_rel link_hreflang link_title link_length link_formated link_content
+}
+
+
+decode_links()
+{
+	calling_element="${1}"
+
+	link_count=`${xml_parser} -v "count(${calling_element}/atom:link)" "${feed_file}"`
+	linkcounter=1
+
+	while [ "${linkcounter}" -le "${link_count}" ]
+	do
+		decode_link "${calling_element}/atom:link[${linkcounter}]"
+		linkcounter=`expr "${linkcounter}" + 1`
+	done
+
+	unset calling_element link_count linkcounter
+}
+
+
+decode_entry()
+{
+	entry_element="${1}"
+
+	entry_id=`${xml_parser} -v "${entry_element}/atom:id" "${feed_file}"`
+
+	if `grep -q "${entry_id}" "${entries_seen}"`
+	then
+		entrycounter=`expr "${entrycounter}" + 1`
+		continue
+	fi
+
+	entry_categories=`${xml_parser} -m "${enty_element}/atom:category" -v . -o , "${feed_file}"`
+	#TODO: category @label, @scheme, @term
+	entry_title=`${xml_parser} -v "${entry_element}/atom:title" "${feed_file}"`
+	entry_rights=`${xml_parser} -v "${entry_element}/atom:rights" "${feed_file}"`
+	entry_published=`${xml_parser} -v "${entry_element}/atom:published" "${feed_file}"`
+	entry_updated=`${xml_parser} -v "${entry_element}/atom:updated" "${feed_file}"`
+	entry_summary=`${xml_parser} -v "${entry_element}/atom:summary" "${feed_file}"`
+	entry_content=`${xml_parser} -v "${entry_element}/atom:content" "${feed_file}"`
+	entry_content_src=`${xml_parser} -v "${entry_element}/atom:content/@src" "${feed_file}"`
+	entry_content_type=`${xml_parser} -v "${entry_element}/atom:content/@type" "${feed_file}"`
+
+	decode_persons "${entry_element}"
+	decode_links "${entry_element}"
+	decode_source "${entry_element}/atom:source"
+
+	entry_rights="${entry_rights:-${feed_rights}}"
+
+	#TODO: if entry_content !zero: case entry_content_type; html => www_pager <entry_content
+
+	if [ -z "${entry_content}" ]
+	then
+		if [ -n "${entry_content_src}" ]
+		then
+			entry_content=`${www_pager} "${entry_content_src}"`
+		else
+			#INFO: apply quirks; e.g. heise.de is featuring a much more readable mobile verion
+			entry_content_url=`printf '%s\n' "${entry_content_url}" | sed -e 's/www.heise.de/m.heise.de/g'`
+			entry_content=`${www_pager} "${entry_content_url}"`
+		fi
+	fi
+
+	write_rfc2822
+
+	unset entry_element entry_categories entry_id entry_title entry_rights entry_published entry_updated entry_summary entry_content entry_content_type entry_content_src entry_authors entry_contributors entry_links entry_content_url
+
+	unset source_element source_categories source_id source_title source_rights source_published source_updated source_summary source_content source_content_type source_content_src source_authors source_contributors source_links source_content_url
+}
+
+
+decode_source()
+{
+	source_element="${1}"
+
+	#TODO: This is a stub. The decode_source function is at large a copy of decode_entry with differently named variables.
+}
+
+
+write_rfc2822()
+{
+	#TODO: OUTPUT FORMATING
+	(
+		printf "From: %s\n" "${entry_authors:-${source_authors:-${feed_authors}}}"
+		printf "Sender: %s\n" "${sender_address}"
+		printf "Subject: %s\n" "${entry_title}"
+		printf "Message-ID: %s\n" "${entry_id}"
+		printf "Original-Message-ID: %s\n" "${entry_id}"
+		printf "Language: %s\n" "nil"
+		printf "Content-Language: %s\n" "nil"
+		printf "Content-Identifier: %s\n" "nil"
+		printf "Content-ID: %s\n" "nil"
+		printf "User-Agent: %s\n" "${feed_generator} ${feed_generator_version} ${feed_generator_uri}" # oder sollte das $0 sein?
+		printf "X-Feed-ID: %s\n" "${feed_id}"
+		printf "X-Feed-Title: %s\n" "${feed_title}"
+		printf "X-Feed-Subtitle: %s\n" "${feed_subtitle}"
+		printf "X-Feed-Updated: %s\n" "${feed_updated}"
+		printf "X-Feed-Rights: %s\n" "${feed_rights}"
+		printf "X-Feed-Categories: %s\n" "${feed_categories}"
+		printf "X-Feed-Content-Url: %s\n" "${feed_content_url}"
+		printf "X-Feed-Contributors: %s\n" "${feed_contributors}"
+		printf "X-Feed-Links: %s\n" "${feed_links}"		
+		printf "Keywords: %s\n" "${entry_categories}"
+		printf "X-Entry-Rights: %s\n" "${entry_rights}"
+		printf "X-Entry-Published: %s\n" "${entry_published}"
+		printf "X-Entry-Updated: %s\n" "${entry_updated}"
+		printf "X-Entry-Contributors: %s\n" "${entry_contributors}"
+		printf "\n\n%s\n\n" "${entry_summary}"
+		printf "%s\n\n" "${entry_content}"
+		printf "Entry-Content-Type: %s\n\n" "${entry_content_type}"
+		printf "Entry-Content-Source: %s\n\n" "${entry_content_src}"
+		
+		printf "Links: %s\n" "${entry_links}"
+		printf "Content-Url: %s\n" "${entry_content_url}"
+		
+	) | sanitize_output | ${pipe_command}
+
+	printf "%s\n" "${entry_id}" >> "${entries_seen}"
+}
+
+
+sanitize_output()
+{
+	cat $1
+	#TODO: input/output conversion: encodings!
+	#TODO: sanitize every input/output string?
+}
+
+
+main "${1}"
+
+unset xml_parser www_pager sender_address entries_seen pipe_command version update_feed feed_url show_help show_version errcode args
+
+exit 0

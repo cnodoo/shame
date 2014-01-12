@@ -1,0 +1,95 @@
+==MAILDIR==
+
+When you move a file from new to cur, you have to change its name from uniq to uniq:info. Make sure to preserve the uniq string, so that separate messages can't bump into each other.
+
+info is morally equivalent to the Status field used by mbox readers. It'd be useful to have MUAs agree on the meaning of info, so I'm keeping a list of info semantics. Here it is.
+
+info starting with "1,": Experimental semantics.
+
+info starting with "2,": Each character after the comma is an independent flag.
+
+    Flag "P" (passed): the user has resent/forwarded/bounced this message to someone else.
+    Flag "R" (replied): the user has replied to this message.
+    Flag "S" (seen): the user has viewed this message, though perhaps he didn't read all the way through it.
+    Flag "T" (trashed): the user has moved this message to the trash; the trash will be emptied by a later user action.
+    Flag "D" (draft): the user considers this message a draft; toggled at user discretion.
+    Flag "F" (flagged): user-defined flag; toggled at user discretion. 
+
+New flags may be defined later. Flags must be stored in ASCII order: e.g., "2,FRS". 
+
+
+
+---
+==STATUS HEADER==
+U    message is not Downloaded and not deleted.
+
+R    message is read or downloaded.
+
+O    message is old but not deleted.
+
+D    to be deleted.
+
+N    new (a new message also sometimes is distinguished by not having any "Status:" header field.
+
+
+
+---
+
+== IMAP ==
+
+2.3.2.  Flags Message Attribute
+
+   A list of zero or more named tokens associated with the message.  A
+   flag is set by its addition to this list, and is cleared by its
+   removal.  There are two types of flags in IMAP4rev1.  A flag of
+   either type may be permanent or session-only.
+
+   A system flag is a flag name that is pre-defined in this
+   specification.  All system flags begin with "\".  Certain system
+   flags (\Deleted and \Seen) have special semantics described
+   elsewhere.  The currently-defined system flags are:
+
+        \Seen       Message has been read
+
+        \Answered   Message has been answered
+
+        \Flagged    Message is "flagged" for urgent/special attention
+
+        \Deleted    Message is "deleted" for removal by later EXPUNGE
+
+        \Draft      Message has not completed composition (marked as a
+                    draft).
+
+        \Recent     Message is "recently" arrived in this mailbox.  This
+                    session is the first session to have been notified
+                    about this message; subsequent sessions will not see
+                    \Recent set for this message.  This flag can not be
+                    altered by the client.
+
+                    If it is not possible to determine whether or not
+                    this session is the first session to be notified
+                    about a message, then that message SHOULD be
+                    considered recent.
+
+                    If multiple connections have the same mailbox
+                    selected simultaneously, it is undefined which of
+                    these connections will see newly-arrives messages
+                    with \Recent set and which will see it without
+                    \Recent set.
+
+      A keyword is defined by the server implementation.  Keywords do
+      not begin with "\".  Servers MAY permit the client to define new
+      keywords in the mailbox (see the description of the
+      PERMANENTFLAGS response code for more information).
+
+      A flag may be permanent or session-only on a per-flag basis.
+      Permanent flags are those which the client can add or remove
+      from the message flags permanently; that is, subsequent sessions
+      will see any change in permanent flags.  Changes to session
+      flags are valid only in that session.
+
+      Note: The \Recent system flag is a special case of a
+      session flag.  \Recent can not be used as an argument in a
+      STORE command, and thus can not be changed at all.
+
+

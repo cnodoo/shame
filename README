@@ -1,0 +1,44 @@
+WARNING: This packages contains scripts and drafts of an
+         old project of mine. Most of them will NOT RUN
+         or might even be dangerous to run!
+
+
+== Shell Adept Mail Environment (shame)==
+
+One tool, one job. The Unix philosophy made this very clear
+and it makes sense. However, it's up to us to decide, what
+a 'job' really is. Nowadays we have a mail client, a feed
+reader, a chat client and a lot of web services just to do
+a single task: communication.
+
+If you look closer at the protocols and data formats used
+-- especially lesser known features -- you realize, they
+are all the same. We can transform one into another without
+(much) loss. Frack. We reinvented the wheel over and over
+again. The parts, that indeed are different, are not widely
+used anyway.
+
+Aware of this situation, some mail clients provide the
+ability to access usenet or read feeds. Their goal is to
+provide an unified information/communication hub, which
+is the same for the shame project. However, those clients
+are (1) not meant to work together and instead (2) one
+ui to rule them all (shame: convert formats and use your
+existing "viewer"; currently we convert everything to mail
+with is based on personal pereference, but you are welcome
+to provide other ones, too, e.g. mail2feed or mail2xmpp..)
+
+ - redefine what a 'job' is.
+ - converting formats (focus format x --> mail)
+ - unified information infrastructure
+ - prototype builts (shell scripts.. to be rewritten)
+
+
+
+
+http://mailutils.org/
+http://www.lysator.liu.se/~jc/maildird.html
+https://github.com/jrosdahl/maildirproc
+https://github.com/lefcha/imapfilter
+https://github.com/djcb/mu
+http://www.xythian.com/notes/2005/01/rss-to-imap-the-proof-of-concept

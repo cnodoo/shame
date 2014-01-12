@@ -1,0 +1,13 @@
+IMAP		MAILDIR		STATUS
+
+		P (passed)
+\Seen		S (seen)	R
+\Answered	R (replied)	
+\Flagged	F (flagged)	---
+\Deleted	T (trashed)	D
+\Draft		D (draft)	---
+\Recent		/new/		N (oder kein satus)
+
+
+				U = message is not downloaded and not deleted
+				O = message is old but not downloaded

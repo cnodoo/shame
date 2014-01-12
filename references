@@ -1,0 +1,7 @@
+References: [<first-in-thread@host> [<grandparents@host>]* ]<in-reply-to@host>
+
+chronologisch! first > grandparent1 > grandparent2 > grandparent3 > .. > parent/in-reply-to 
+
+bei mehr als 10 grandparents, immer den zweiten eintrag (also grandparent1) entfernen
+
+
