@@ -1,0 +1,31 @@
+#INFO: https://github.com/l0b0/img2vcard
+#INFO: https://github.com/yvangodard/LDAP2vCard/blob/master/ldap2vcard.sh
+
+#INFO: https://github.com/l0b0/vcard/blob/master/split.sh
+#COPYRIGHT: Copyright (C) 2012 Victor Engmark
+#LICENSE: GPLv3+
+#TODO: alias vcfsplit=
+
+#INFO: https://github.com/l0b0/vcard/blob/master/split-lines.sh
+#COPYRIGHT: Copyright (C) 2012 Victor Engmark
+#LICENSE: GPLv3+
+alias vcffold='sed -e \'{ s/\(.\{75\}\)\([^\r]\)/\1\r\n \2/; P; D }\''
+
+
+#INFO: https://github.com/l0b0/vcard/blob/master/sort-lines.sh
+#COPYRIGHT: Copyright (C) 2012 Victor Engmark
+#LICENSE: GPLv3+
+#TODO: alias vcfsort=
+
+
+#INFO: https://github.com/l0b0/vcard/blob/master/join-lines.sh
+#COPYRIGHT: Copyright (C) 2012 Victor Engmark
+#LICENSE: GPLv3+
+alias vcfunfold='sed -n \'
+1h
+1!H
+${
+	g
+	s/\r\n //g
+	p
+}\'
