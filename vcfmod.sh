@@ -8,13 +8,13 @@
 
 output=/dev/null
 
-if [ -t 0 ]
-then
-	echo kein filter	
-else
-	input=randomshit
-	cat > "${input}"
-fi
+#if [ -t 0 ]
+#then
+#	echo kein filter
+#else
+#	input=randomshit
+#	cat > "${input}"
+#fi
 
 
 vcfemail()
@@ -67,6 +67,30 @@ vcfdata()
 }
 
 
+vcfcompat2()
+{
+	sed 	-e 's/^VERSION:4.0/VERSION:2.1/g' \
+		-e 's/^IMPP:xmpp:/X-JABBER:/g' \
+		-e 's/^EMAIL:mailto:/EMAIL:/g'
+	#TODO: vcf2.1 compat
+	#TODO: we should call external validators
+}
+
+
+vcfcompat3()
+{
+	cat
+	#TODO: vcf3.0 compat
+}
+
+
+vcfcompat4()
+{
+	cat
+	#TODO: vcf4.0 compat (when we want to import existing vcf)
+}
+
+
 vcfhelp()
 {
 	cat <<- END
@@ -84,6 +108,9 @@ vcfhelp()
 	  -v helpscreen
 	  -d debug
 	  -D download files instead of using links
+	  -2 vcard 2.1 compatibility (stub)
+	  -3 vcard 3.0 compatibility (stub)
+	  -4 vcard 4.0 compatibility (stub)
 
 	params:
 	  -m mail => EMAIL
@@ -116,8 +143,8 @@ vcfhelp()
 	  -H additional_name => N (3/5)
 	  -G given_name => N (2/5)
 	  -F family_name =>  N (1/5)
-	  -X honorific_prefixe => N (4/5)
-	  -Y honorific_suffixe => N(5/5) 	
+	  -X honorific_prefix => N (4/5)
+	  -Y honorific_suffix => N(5/5) 	
 
 	auto:
 	  set UID if unset
@@ -150,11 +177,14 @@ vcfmain()
 	adr_postal=
 	adr_country=
 
-	args=`getopt vdDm:j:s:i:n:a:t:u:b:k:l:f:p:c:z:g:o:r:R:S:T:C:L:M:A:K:q:H:G:F:X:Y: ${*}`; errcode="${?}"; set -- ${args}
+	args=`getopt vdDm234:j:s:i:n:a:t:u:b:k:l:f:p:c:z:g:o:r:R:S:T:C:L:M:A:K:q:H:G:F:X:Y: ${*}`; errcode="${?}"; set -- ${args}
 	
 	while :
 	do
 		case "${1}" in
+				-2) true;;
+				-3) true;;
+				-4) true;;
 				-m) vcfemail "$2"; shift; shift;;
 				-j) vcfxmpp "$2"; shift; shift;;
 				-s) gender_sex="$2"; shift; shift;;
@@ -197,8 +227,13 @@ vcfmain()
 	
 	#INFO: generate structured field "N"
 	name="${family_names};${given_names};${additional_names};${honorific_prefixes};${honorific_postfixes}"
-	test ";;;;" == "${name}" || vcfsimple "N" "${name}"
-	#TODO: generate FN from N? 
+	test -z `echo ${name} | sed -e 's/;//g'` || vcfsimple "N" "${name}"
+
+	#INFO: generate unstructured field FN from N
+	#TODO: xy_names can be comma seperated! which to use?
+	#TODO: which name fields and order to use?
+	vcfsimple "FN" "${given_names} ${family_names}"
+
 	#TODO: generate N from FN?
 	unset name family_names given_names additional_names honorific_prefixes honorific_postfixes
 	
@@ -212,7 +247,7 @@ vcfmain()
 	#INFO: generate structured field "ADR"
 	#TODO: curerntly not accessible from cli
 	adr="${adr_pobox};${adr_extended};${adr_street};${adr_locality};${adr_region};${adr_postal};${adr_country}"
-	test ";;;;;;" == "${adr}" || vcfsimple "ADR" "${adr}"
+	test -z `echo ${adr} | sed -e 's/;//g'` || vcfsimple "ADR" "${adr}"
 	unset adr adr_pobox adr_extended adr_street adr_locality adr_region adr_postal adr_country
 
 
@@ -233,7 +268,7 @@ vcfmain()
 	cat <<- END
 	UID:${uid:-urn:uuid:`uuidgen`}
 	REV:`date -u +%Y-%m-%dT%H:%M:%S.00Z`
-	PRODID:${prodid:-'-//FOO BAR//NONSGML Version 1//EN'}
+	PRODID:${prodid:--//FOO BAR//NONSGML Version 1//EN}
 	END
 	
 	unset uid prodid version revision
@@ -244,6 +279,6 @@ vcfmain()
 	vcfsimple "VERSION" "4.0"
 	vcfmain $@
 	vcfsimple "END" "VCARD"
-) | tee "${output}" 
+) | vcfcompat2 | tee "${output}" 
 
 unset input output download_files debug_output

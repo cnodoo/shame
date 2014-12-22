@@ -29,3 +29,6 @@ ${
 	s/\r\n //g
 	p
 }\'
+
+
+#sed -n '/begin/,/end/p'
