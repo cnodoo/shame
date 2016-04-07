@@ -1,0 +1,130 @@
+#!/bin/sh
+
+# sed -e "s/${MARKER}/\x1b[31m${MARKER}\x1b[39;49m/g"
+# sed -e "s/"
+# https://en.wikipedia.org/wiki/ANSI_escape_code
+
+
+margin_left=1
+margin_right=1
+margin_top=1
+margin_down=1
+
+padding_left=1
+padding_right=1
+padding_top=1
+padding_down=1
+
+marker="█"
+markerwidth=`printf "${marker}" | wc -m`
+markerprefix='\033[36;46m'
+markersuffix='\033[39;49m'
+
+width=80
+contentwidth=`expr ${width} - ${padding_left} - ${padding_right} - ${margin_left} - ${margin_right} - ${markerwidth}`
+
+title="Ein ganz wichtiges Thema da auch ganz lang und sehr sehr wichtig ist. Manche Leute schreiben auch in den Subject zu viel"
+subtitle="Benutzer Name"
+
+titleprefix='\033[1m' # 1:bold 2:faint 3:italic
+titlesuffix='\033[0m'
+subtitleprefix='\033[2;3m' # 1:bold 2:faint 3:italic
+subtitlesuffix='\033[0m'
+
+titlelength=`printf "${title}" | wc -m`
+titlepaddinglength=`expr ${contentwidth} - ${titlelength}`
+subtitlelength=`printf "${subtitle}" | wc -m`
+subtitlepaddinglength=`expr ${contentwidth} - ${subtitlelength}`
+
+if [ ${titlelength} -gt ${contentwidth} ]
+then
+	maxlen=`expr ${contentwidth} - 3`
+	title=`printf "${title}" | cut -c 1-${maxlen}`
+        title="${title}..."
+fi
+
+if [ ${subtitlelength} -gt ${contentwidth} ]
+then
+	maxlen=`expr ${contentwidth} - 3`
+	subtitle=`printf "${subtitle}" | cut -c 1-${maxlen}`
+        subtitle="${subtitle}..."
+fi
+
+contentprefix='\033[35;42m'
+contentsuffix='\033[0m'
+
+lineprefix=
+linesuffix=
+emptyline=
+
+i=0
+for i in `seq 1 1 ${margin_right}`
+do
+	linesuffix="${linesuffix} "
+done
+
+i=0
+for i in `seq 1 1 ${padding_right}`
+do
+	linesuffix="${linesuffix} "
+done
+
+i=0
+for i in `seq 1 1 ${margin_left}`
+do
+	lineprefix="${lineprefix} "
+done
+
+lineprefix="${lineprefix}${markerprefix}${marker}${markersuffix}${contentprefix}"
+linesuffix="${linesuffix}${contentsuffix}"
+
+i=0
+for i in `seq 1 1 ${titlepaddinglength}`
+do
+	titlepadding="${titlepadding} "
+done
+
+i=0
+for i in `seq 1 1 ${subtitlepaddinglength}`
+do
+	subtitlepadding="${subtitlepadding} "
+done
+
+i=0
+for i in `seq 1 1 ${padding_left}`
+do
+	lineprefix="${lineprefix} "
+done
+
+i=0
+for i in `seq 1 1 ${contentwidth}`
+do
+	emptyline="${emptyline} "
+done
+
+i=0
+for i in `seq 1 1 ${margin_top}`
+do
+	echo ""
+done
+
+i=0
+for i in `seq 1 1 ${padding_top}`
+do
+	echo "${lineprefix}${emptyline}${linesuffix}"
+done
+
+printf "${lineprefix}${titleprefix}%s${titlesuffix}${contentprefix}${titlepadding}${linesuffix}\n" "${title}"
+printf "${lineprefix}${subtitleprefix}%s${subtitlesuffix}${contentprefix}${subtitlepadding}${linesuffix}\n" "${subtitle}" 
+
+i=0
+for i in `seq 1 1 ${padding_down}`
+do
+	echo "${lineprefix}${emptyline}${linesuffix}"
+done
+
+i=0
+for i in `seq 1 1 ${margin_down}`
+do
+	echo ""
+done
